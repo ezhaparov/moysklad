@@ -56,7 +56,7 @@ function Cases() {
   return <Section label={cases.label} title={cases.title} description={cases.description}><div className="grid three">{cases.items.map((c, i) => <article className="case-card" key={i}>{c.image ? <img className="case-image" src={c.image} alt={c.name} style={{ objectFit: 'cover' }}/> : <div className={`case-image case-${i % 3}`}><Icon name={icons[i % 3]} size={46}/><span>Место для фото проекта</span></div>}<div className="case-body"><span className="eyebrow">{c.niche}</span><h3>{c.name}</h3><p><b>Задача:</b> {c.task}</p><p><b>Результат:</b> {c.result}</p></div></article>)}</div></Section>;
 }
 function Pricing() {
-  return <Section id="pricing" label={pricing.label} title={pricing.title} description={pricing.description} className="tinted"><div className="grid three pricing">{pricing.plans.map(p => <article key={p.name} className={`price-card ${p.featured ? 'featured' : ''}`}>{p.featured && <span className="popular">{pricing.featuredBadge}</span>}<h3>{p.name}</h3><p>{p.desc}</p><div className="price">{p.price}<span>{pricing.currency}</span></div><div className="price-divider"/><ul>{p.items.map(t => <li key={t}><Icon name="check" size={17}/>{t}</li>)}</ul><Button secondary={!p.featured}>{pricing.button}</Button></article>)}</div><p className="pricing-note">{pricing.note}</p></Section>;
+  return <Section id="pricing" label={pricing.label} title={pricing.title} description={pricing.description} className="tinted"><div className="grid three pricing">{pricing.plans.map(p => <article key={p.name} className={`price-card ${p.featured ? 'featured' : ''}`}>{p.featured && <span className="popular">{pricing.featuredBadge}</span>}<h3>{p.name}</h3><p>{p.desc}</p><div className="price">{p.price}<span>{pricing.currency}</span>{'priceNote' in p && p.priceNote && <em className="price-note">{p.priceNote}</em>}</div><div className="price-divider"/><ul>{p.items.map(t => <li key={t}><Icon name="check" size={17}/>{t}</li>)}</ul><Button secondary={!p.featured}>{pricing.button}</Button></article>)}</div><p className="pricing-note">{pricing.note}</p></Section>;
 }
 function About() {
   return <Section id="about" label={about.label} title={about.title}><div className="about-grid"><div className="portrait">{about.photo ? <img src={about.photo} alt={site.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }}/> : <><div className="portrait-outline"><Icon name="person" size={110}/></div><span>Место для вашего фото</span></>}<div className="portrait-tag"><span className="live-dot"/> {about.photoTag}</div></div><div className="about-copy"><h3>{about.heading}</h3>{about.paragraphs.map((t, i) => <p key={i}>{t}</p>)}<div className="values">{about.values.map(t => <span key={t}><Icon name="check" size={17}/>{t}</span>)}</div><a href="#contact" className="text-link">{about.link} <Icon name="arrow" size={18}/></a></div></div></Section>;
@@ -64,16 +64,28 @@ function About() {
 function Faq() {
   return <Section id="faq" label={faq.label} title={faq.title} className="faq-section"><div className="faq-list">{faq.items.map(f => <details key={f.q}><summary>{f.q}<span>+</span></summary><p>{f.a}</p></details>)}</div></Section>;
 }
+// Номер: после +996 нужно 9 цифр, первая — 2, 5, 7 или 9 (мобильные операторы КР)
+const phoneValid = (d: string) => /^[2579]\d{8}$/.test(d);
+const formatPhone = (d: string) => [d.slice(0, 3), d.slice(3, 6), d.slice(6, 9)].filter(Boolean).join(' ');
 function Contact() {
   const [hint, setHint] = useState('');
+  const [phone, setPhone] = useState(''); // только 9 цифр после +996
+  const [phoneError, setPhoneError] = useState('');
+  const onPhone = (v: string) => {
+    let d = v.replace(/\D/g, '');
+    if (d.startsWith('996')) d = d.slice(3);      // вставили номер целиком
+    else if (d.startsWith('0')) d = d.slice(1);   // вставили 0505...
+    setPhone(d.slice(0, 9)); setPhoneError('');
+  };
   const submit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!phoneValid(phone)) { setPhoneError('Введите номер полностью: +996 и 9 цифр, например +996 505 252 525'); return; }
     if (!contacts.whatsapp) { setHint(contact.noContactsHint); return; }
     const d = new FormData(e.currentTarget);
-    const text = `${contacts.whatsappMessage}\nИмя: ${d.get('name')}\nТелефон: ${d.get('phone')}\nТип бизнеса: ${d.get('business')}`;
+    const text = `${contacts.whatsappMessage}\nИмя: ${d.get('name')}\nТелефон: +996${phone}\nТип бизнеса: ${d.get('business')}`;
     window.open(waLink(text), '_blank', 'noopener');
   };
-  return <section id="contact" className="contact-section"><div className="container contact-grid"><div><span className="eyebrow">{contact.label}</span><h2><Lines lines={contact.titleLines}/><br/><span>{contact.titleAccent}</span></h2><p><Lines lines={contact.textLines}/></p><div className="contact-channels"><a href={tgLink} {...external(tgLink)}><Icon name="plane"/>Telegram<Icon name="arrow" size={18}/></a><a href={waLink()} {...external(waLink())}><Icon name="chat"/>WhatsApp<Icon name="arrow" size={18}/></a></div></div><form id="contact-form" onSubmit={submit}><h3>{contact.formTitle}</h3><p>{contact.formText}</p><label>Ваше имя<input required name="name" placeholder="Как к вам обращаться?"/></label><label>Номер телефона<input required name="phone" type="tel" placeholder="+996 ___ ___ ___"/></label><label>Тип бизнеса<select required name="business" defaultValue=""><option value="" disabled>Выберите из списка</option>{contact.businessTypes.map(t => <option key={t}>{t}</option>)}</select></label><button className="button" type="submit">{contact.submit}<Icon name="arrow" size={18}/></button><small>{hint}</small></form></div></section>;
+  return <section id="contact" className="contact-section"><div className="container contact-grid"><div><span className="eyebrow">{contact.label}</span><h2><Lines lines={contact.titleLines}/><br/><span>{contact.titleAccent}</span></h2><p><Lines lines={contact.textLines}/></p><div className="contact-channels"><a href={tgLink} {...external(tgLink)}><Icon name="plane"/>Telegram<Icon name="arrow" size={18}/></a><a href={waLink()} {...external(waLink())}><Icon name="chat"/>WhatsApp<Icon name="arrow" size={18}/></a></div></div><form id="contact-form" onSubmit={submit}><h3>{contact.formTitle}</h3><p>{contact.formText}</p><label>Ваше имя<input required name="name" placeholder="Как к вам обращаться?"/></label><label>Номер телефона<span className={`phone-field ${phoneError ? 'invalid' : ''}`}><span className="phone-prefix">+996</span><input required name="phone" type="tel" inputMode="numeric" autoComplete="tel-national" placeholder="505 252 525" value={formatPhone(phone)} onChange={e => onPhone(e.target.value)} aria-invalid={!!phoneError}/></span>{phoneError && <span className="field-error" role="alert">{phoneError}</span>}</label><label>Тип бизнеса<select required name="business" defaultValue=""><option value="" disabled>Выберите из списка</option>{contact.businessTypes.map(t => <option key={t}>{t}</option>)}</select></label><button className="button" type="submit">{contact.submit}<Icon name="arrow" size={18}/></button><small>{hint}</small></form></div></section>;
 }
 
 // id блока из sectionOrder (content.ts) -> компонент
@@ -85,12 +97,12 @@ const blocks: Record<string, () => ReactNode> = {
 export default function App() {
   const [open, setOpen] = useState(false);
   return <>
-    <header className="header"><div className="container header-inner"><Brand/><nav className={open ? 'open' : ''}>{menu.map(m => <a key={m.id} href={`#${m.id}`} onClick={() => setOpen(false)}>{m.text}</a>)}</nav><div className="header-actions"><a href={tgLink} {...external(tgLink)} className="telegram-link"><Icon name="plane" size={17}/>Telegram</a><a href={waLink()} {...external(waLink())} className="small-button"><Icon name="chat" size={17}/>WhatsApp</a></div><button className="menu-button" onClick={() => setOpen(!open)} aria-label="Открыть меню" aria-expanded={open}>☰</button></div></header>
+    <header className="header"><div className="container header-inner"><Brand/><nav className={open ? 'open' : ''}>{menu.filter(m => sectionOrder.includes(m.id === 'services' ? 'about-ms' : m.id)).map(m => <a key={m.id} href={`#${m.id}`} onClick={() => setOpen(false)}>{m.text}</a>)}</nav><div className="header-actions"><a href={tgLink} {...external(tgLink)} className="telegram-link"><Icon name="plane" size={17}/>Telegram</a><a href={waLink()} {...external(waLink())} className="small-button"><Icon name="chat" size={17}/>WhatsApp</a></div><button className="menu-button" onClick={() => setOpen(!open)} aria-label="Открыть меню" aria-expanded={open}>☰</button></div></header>
     <main>
       <Hero/>
       {sectionOrder.map(id => { const B = blocks[id]; return B ? <B key={id}/> : null; })}
     </main>
-    <footer><div className="container footer-inner"><Brand/><span className="footer-location">{footer.location}{(contacts.phone || contacts.email) && <><br/><small>{[contacts.phone, contacts.email].filter(Boolean).join(' · ')}</small></>}</span><div className="footer-socials">{igLink && <a href={igLink} {...external(igLink)}>Instagram<Icon name="arrow" size={14}/></a>}<a href={tgLink} {...external(tgLink)}>Telegram<Icon name="arrow" size={14}/></a><a href={waLink()} {...external(waLink())}>WhatsApp<Icon name="arrow" size={14}/></a></div></div><div className="container footer-bottom"><span>© {new Date().getFullYear()} {site.name}</span><span>{footer.bottom}</span></div></footer>
+    <footer><div className="container footer-inner"><Brand/><span className="footer-location">{footer.location}{(contacts.phone || contacts.email) && <><br/><small>{[contacts.phone].filter(Boolean).join(' · ')}</small></>}</span><div className="footer-socials">{igLink && <a href={igLink} {...external(igLink)}>Instagram<Icon name="arrow" size={14}/></a>}<a href={tgLink} {...external(tgLink)}>Telegram<Icon name="arrow" size={14}/></a><a href={waLink()} {...external(waLink())}>WhatsApp<Icon name="arrow" size={14}/></a></div></div><div className="container footer-bottom"><span>© {new Date().getFullYear()} {site.name}</span><span>{footer.bottom}</span></div></footer>
     <a className="floating-whatsapp" href={waLink()} {...external(waLink())} aria-label="Связаться в WhatsApp"><Icon name="chat" size={26}/></a>
   </>;
 }
